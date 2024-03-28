@@ -1,11 +1,13 @@
 <script>
 import AppBecomePartner from '../components/AppBecomePartner.vue';
+import AppSearchPerCategory from '../components/AppSearchPerCategory.vue'
 export default {
     name: 'AppHome',
     methods: {
     },
     components: {
-        AppBecomePartner
+        AppBecomePartner,
+        AppSearchPerCategory
     }
 }
 </script>
@@ -43,6 +45,7 @@ export default {
             </div>
         </div>
     </div>
+    <AppSearchPerCategory />
     <AppBecomePartner />
 </template>
 <style lang="scss">

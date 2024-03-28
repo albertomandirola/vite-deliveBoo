@@ -17,7 +17,7 @@ export default {
                   
                </div>
             </div>
-            <div class="col 12 text-center py-3">
+            <div class="col text-center py-3">
                 <button type="button" class="btn btn-warning rounded-pill">Registrati</button>
             </div>
         </div>

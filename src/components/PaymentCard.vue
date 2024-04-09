@@ -136,36 +136,64 @@ export default {
             });
         },
         processPayment(nonce) {
-            // Ottieni i dati utente dal localStorage
-            const userData = JSON.parse(localStorage.getItem('userData'));
+            // Validazione dei campi del modulo prima di procedere con il pagamento
+            const isCardNumberValid = this.validateCardNumber();
+            const isCardDateValid = this.validateCardDate();
+            const isCardCvvValid = this.validateCardCvv();
 
-            // Controlla se userData è valido prima di inviare la richiesta
-            if (!userData) {
+            // Se tutti i campi sono validi, procedi con il pagamento
+            if (isCardNumberValid && isCardDateValid && isCardCvvValid) {
+                // Ottieni i dati utente dal localStorage
+                const userData = JSON.parse(localStorage.getItem('userData'));
+
+                // Controlla se userData è valido prima di inviare la richiesta
+                if (!userData) {
                 console.error('Dati utente non trovati nel localStorage');
                 return;
-            }
+                }
 
-            // Effettua la richiesta Axios includendo paymentMethodNonce, cart e userData
-            axios.post(`${this.store.baseUrl}/api/payment/process`, {
+                // Effettua la richiesta Axios includendo paymentMethodNonce, cart e userData
+                axios.post(`${this.store.baseUrl}/api/payment/process`, {
                 paymentMethodNonce: nonce,
                 cart: this.store.cart.items,
                 userData: userData
-            })
+                })
                 .then(response => {
-                    const paymentEvent = response.data.success;
-                    if (paymentEvent) {
-                        console.log(response)
-                        this.$router.push({ name: 'payment-response', params: { paymentEvent: paymentEvent } }); // Reindirizza alla pagina di conferma pagamento
-                    } else {
-                        this.$router.push({ name: 'payment-response', params: { paymentEvent: paymentEvent } }); // Reindirizza alla pagina di errore pagamento
-                    }
+                const paymentEvent = response.data.success;
+                if (paymentEvent) {
+                    console.log(response)
+                    this.$router.push({ name: 'payment-response', params: { paymentEvent: paymentEvent } }); // Reindirizza alla pagina di conferma pagamento
+                } else {
+                    this.$router.push({ name: 'payment-response', params: { paymentEvent: paymentEvent } }); // Reindirizza alla pagina di errore pagamento
+                }
                 })
                 .catch(error => {
-                    // Gestisci gli errori durante la richiesta al server
-                    console.error('Errore durante il pagamento:', error);
-                    this.$router.push({ name: 'home' }); // Reindirizza alla pagina di errore pagamento
+                // Gestisci gli errori durante la richiesta al server
+                console.error('Errore durante il pagamento:', error);
+                this.$router.push({ name: 'home' }); // Reindirizza alla pagina di errore pagamento
                 });
-        }
+            } else {
+                // Se almeno uno dei campi non è valido, mostra messaggio di errore
+                console.error('Uno o più campi del modulo non sono validi. Impossibile procedere con il pagamento.');
+            }
+            },
+            validateCardNumber() {
+            // Logica di validazione per il numero della carta
+            const cardNumber = this.cardNumber.trim();
+            return cardNumber.length === 12; // Esempio di validazione: il numero della carta deve essere di 12 caratteri
+            },
+            validateCardDate() {
+            // Logica di validazione per la data di scadenza
+            // Esempio di validazione: la data di scadenza non deve essere più vecchia della data odierna
+            const currentDate = new Date();
+            const expirationDate = new Date(this.cardYear, this.cardMonth - 1); // Mese è 0-based
+            return expirationDate > currentDate;
+            },
+            validateCardCvv() {
+            // Logica di validazione per il CVV
+            const cvv = this.cardCvv.trim();
+            return cvv.length === 3; // Esempio di validazione: il CVV deve essere di tre cifre
+            },
 
     }
 }
@@ -296,37 +324,26 @@ export default {
                     <div class="card-input">
                         <label for="cardNumber" class="card-input__label">Numero Carta</label>
                         <div class="form-control" id="cardNumber"></div>
-                        <!-- <input type="text" id="cardNumber" class="card-input__input" v-mask="generateCardNumberMask" v-model="cardNumber" @focus="focusInput" @blur="blurInput" data-ref="cardNumber" autocomplete="off"> -->
+                        <div class="error-message" id="cardNumberError"></div>
                     </div>
                     <div class="card-input">
                         <label for="cardName" class="card-input__label">Nome e Cognome</label>
                         <div class="form-control" id="cardName"></div>
-                        <!-- <input type="text" id="cardName" class="card-input__input" v-model="cardName" @focus="focusInput" @blur="blurInput" data-ref="cardName" autocomplete="off"> -->
+                        <div class="error-message" id="cardNameError"></div>
                     </div>
                     <div class="card-form__row">
                         <div class="card-form__col">
                             <div class="card-form__group">
                                 <label for="cardMonth" class="card-input__label">Data di scadenza</label>
                                 <div class="form-control" id="cardMonth"></div>
-                                <!-- <select class="card-input__input -select" id="cardMonth" v-model="cardMonth" @focus="focusInput" @blur="blurInput" data-ref="cardDate">
-                  <option value="" disabled selected>Mese</option>
-                  <option :value="n < 10 ? '0' + n : n" v-for="n in 12" :disabled="n < minCardMonth" :key="n">
-                      {{n < 10 ? '0' + n : n}}
-                  </option>
-                </select>
-                <select class="card-input__input -select" id="cardYear" v-model="cardYear" @focus="focusInput" @blur="blurInput" data-ref="cardDate">
-                  <option value="" disabled selected>Anno</option>
-                  <option :value="$index + minCardYear" v-for="(n, $index) in 12" :key="n">
-                      {{$index + minCardYear}}
-                  </option>
-                </select> -->
+                                <div class="error-message" id="cardDateError"></div>
                             </div>
                         </div>
                         <div class="card-form__col -cvv">
                             <div class="card-input">
                                 <label for="cardCvv" class="card-input__label">CVV</label>
                                 <div class="form-control" id="cardCvv"></div>
-                                <!-- <input type="text" class="card-input__input" id="cardCvv" v-mask="'####'" maxlength="4" v-model="cardCvv" @focus="flipCard(true)" @blur="flipCard(false)" autocomplete="off"> -->
+                                <div class="error-message" id="cardCvvError"></div>
                             </div>
                         </div>
                     </div>
